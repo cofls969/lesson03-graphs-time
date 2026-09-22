@@ -152,44 +152,50 @@ st.info("💡 이 그래프로 알 수 있는 것: (여기에 한 문장 설명�
 
 
 # ==========================================
-# 구역 5: 월 및 요일별 관객수 히트맵 (새로 추가된 부분)
+# 구역 5: 월 및 일별 관객수 히트맵 (촘촘하게 수정됨)
 # ==========================================
 st.markdown("---")
-st.header("5. 월 × 요일별 관객수 히트맵")
+st.header("5. 월 × 일별 관객수 히트맵 (365일 달력형)")
 
-# 날짜에서 월과 요일 추출 (0=월요일, 6=일요일)
+# 날짜에서 월과 일 추출
 df['월'] = df['날짜'].dt.month
-day_map = {0: '월', 1: '화', 2: '수', 3: '목', 4: '금', 5: '토', 6: '일'}
-df['요일'] = df['날짜'].dt.dayofweek.map(day_map)
+df['일'] = df['날짜'].dt.day
 
-# 히트맵 데이터 집계
-heatmap_data = df.groupby(['월', '요일'])['일관객'].sum().reset_index()
+# 히트맵 데이터 집계 (매일의 10위권 관객수 합계)
+heatmap_data = df.groupby(['월', '일'])['일관객'].sum().reset_index()
 
-# 플롯리 밀도 히트맵 생성
+# 1일부터 31일까지 순서대로 표시하기 위한 리스트
+day_order = list(range(1, 32))
+
+# 플롯리 밀도 히트맵 생성 (12월 x 31일 = 더 촘촘한 형태)
 fig5 = px.density_heatmap(
     heatmap_data,
-    x='요일',
+    x='일',
     y='월',
     z='일관객',
     histfunc='sum',
     category_orders={
-        '요일': ['월', '화', '수', '목', '금', '토', '일'],
-        '월': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        '월': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        '일': day_order
     },
     color_continuous_scale='Blues', # 관객이 많을수록 진한 파란색
-    title="월과 요일에 따른 총 관객수 분포"
+    title="1년 365일 매일의 관객수 밀도"
 )
 
-# y축(월)을 달력처럼 1월이 맨 위로 오도록 뒤집기 및 간격 설정
+# y축(월)을 1월이 위로 오게 뒤집고, x/y축 모두 모든 숫자가 보이도록 간격(dtick) 설정
 fig5.update_yaxes(autorange="reversed", tickmode='linear', dtick=1)
+fig5.update_xaxes(tickmode='linear', dtick=1)
+
 # 마우스 오버 시 표시될 정보 설정
-fig5.update_traces(hovertemplate='월: %{y}월<br>요일: %{x}요일<br>관객수: %{z:,}명<extra></extra>')
+fig5.update_traces(hovertemplate='%{y}월 %{x}일<br>관객수: %{z:,}명<extra></extra>')
+
+# 그래프가 너무 납작해 보이지 않도록 높이 조절
+fig5.update_layout(height=500)
 
 st.plotly_chart(fig5, use_container_width=True)
 
 # 인사이트 문구 자리
-st.info("💡 이 그래프로 알 수 있는 것: (여기에 한 문장 설명을 추가하세요)")
-
+st.info("💡 이 그래프로 알 수 있는 것: (예: 특정 공휴일이나 방학 시즌에 색이 확연히 진해지는 것을 볼 수 있습니다.)")
 
 # ==========================================
 # 구역 6: 향후 추가될 그래프를 위한 예비 구역
