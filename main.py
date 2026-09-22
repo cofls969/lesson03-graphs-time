@@ -105,8 +105,8 @@ for index, row in top3_days.iterrows():
         text=f"{date_str}",
         showarrow=True,
         arrowhead=1,
-        ax=0,       # x축 방향 화살표 길이
-        ay=-40,     # y축 방향 화살표 길이 (위로 띄움)
+        ax=0,
+        ay=-40,
         font=dict(size=12, color="red")
     )
 
@@ -124,29 +124,26 @@ st.info("💡 이 그래프로 알 수 있는 것: (여기에 한 문장 설명�
 st.markdown("---")
 st.header("4. 총 관객수 Top 10 영화")
 
-# 영화별 일관객 합계와 10위권 진입 일수(데이터에 등장한 행의 수) 계산
+# 영화별 일관객 합계와 10위권 진입 일수 계산
 movie_stats = df.groupby('영화명').agg(
     총관객수=('일관객', 'sum'),
     진입일수=('날짜', 'count')
 ).reset_index()
 
-# 총관객수 기준 Top 10 추출
-top10_movies_bar = movie_stats.nlargest(10, '총관객수')
+# 총관객수 기준 Top 10 추출 및 정렬 (가장 큰 값이 맨 위에 오도록)
+top10_movies_bar = movie_stats.nlargest(10, '총관객수').sort_values('총관객수', ascending=True)
 
-# 가로 막대 그래프에서 가장 큰 값이 맨 위에 오도록 오름차순 정렬 (Plotly의 그리기 방식 때문)
-top10_movies_bar = top10_movies_bar.sort_values('총관객수', ascending=True)
-
-# 플롯리 가로 막대 그래프 생성 (orientation='h')
+# 플롯리 가로 막대 그래프 생성
 fig4 = px.bar(
     top10_movies_bar,
     x='총관객수',
     y='영화명',
     orientation='h',
-    custom_data=['진입일수'], # 마우스 오버에 사용할 추가 데이터 지정
+    custom_data=['진입일수'],
     title="총 관객수 Top 10 영화 및 10위권 진입 일수"
 )
 
-# 마우스 오버 시 표시될 정보 설정 (customdata[0]이 진입일수)
+# 마우스 오버 시 표시될 정보 설정
 fig4.update_traces(hovertemplate='영화명: %{y}<br>총 관객수: %{x:,}명<br>10위권 진입 일수: %{customdata[0]}일<extra></extra>')
 st.plotly_chart(fig4, use_container_width=True)
 
@@ -155,8 +152,48 @@ st.info("💡 이 그래프로 알 수 있는 것: (여기에 한 문장 설명�
 
 
 # ==========================================
-# 구역 5: 향후 추가될 그래프를 위한 예비 구역
+# 구역 5: 월 및 요일별 관객수 히트맵 (새로 추가된 부분)
 # ==========================================
 st.markdown("---")
-st.header("5. (다음 그래프가 들어갈 자리)")
+st.header("5. 월 × 요일별 관객수 히트맵")
+
+# 날짜에서 월과 요일 추출 (0=월요일, 6=일요일)
+df['월'] = df['날짜'].dt.month
+day_map = {0: '월', 1: '화', 2: '수', 3: '목', 4: '금', 5: '토', 6: '일'}
+df['요일'] = df['날짜'].dt.dayofweek.map(day_map)
+
+# 히트맵 데이터 집계
+heatmap_data = df.groupby(['월', '요일'])['일관객'].sum().reset_index()
+
+# 플롯리 밀도 히트맵 생성
+fig5 = px.density_heatmap(
+    heatmap_data,
+    x='요일',
+    y='월',
+    z='일관객',
+    histfunc='sum',
+    category_orders={
+        '요일': ['월', '화', '수', '목', '금', '토', '일'],
+        '월': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    },
+    color_continuous_scale='Blues', # 관객이 많을수록 진한 파란색
+    title="월과 요일에 따른 총 관객수 분포"
+)
+
+# y축(월)을 달력처럼 1월이 맨 위로 오도록 뒤집기 및 간격 설정
+fig5.update_yaxes(autorange="reversed", tickmode='linear', dtick=1)
+# 마우스 오버 시 표시될 정보 설정
+fig5.update_traces(hovertemplate='월: %{y}월<br>요일: %{x}요일<br>관객수: %{z:,}명<extra></extra>')
+
+st.plotly_chart(fig5, use_container_width=True)
+
+# 인사이트 문구 자리
+st.info("💡 이 그래프로 알 수 있는 것: (여기에 한 문장 설명을 추가하세요)")
+
+
+# ==========================================
+# 구역 6: 향후 추가될 그래프를 위한 예비 구역
+# ==========================================
+st.markdown("---")
+st.header("6. (다음 그래프가 들어갈 자리)")
 st.write("새로운 그래프 아이디어가 있다면 여기에 추가됩니다.")
